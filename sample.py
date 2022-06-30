@@ -42,12 +42,12 @@ def load_desk_text():
     return utils.split_spritesheet(utils.import_spritesheet( (SAMPLEDIR / "stream.png").resolve() ), SPRITESIZE, 21)
 
 me = sprite.Sprite2D(cardinalsprites= load_walk(), hitboxes = [])
-mehitbox = hitbox.MaskedSquareHitbox(hitbox.SquareHitbox.create_square_image(me.get_image().width, BASEHEIGHT),anchor="bl")
+mehitbox = hitbox.MaskedHitbox(hitbox.create_rect_hitbox_image(me.get_image().width, BASEHEIGHT),anchor="bl")
 me.hitboxes.append(mehitbox)
 
 printer = sprite.StationarySprite(representation=load_printer())
 desk = sprite.StationarySprite(representation= load_desk())
-deskhitbox = hitbox.MaskedSquareHitbox(hitbox.SquareHitbox.create_square_image(desk.get_image().width, BASEHEIGHT),anchor="bl")
+deskhitbox = hitbox.MaskedHitbox(hitbox.create_rect_hitbox_image(desk.get_image().width, BASEHEIGHT),anchor="bl")
 monitortext = sprite.CosmeticSprite(idleanimations= load_desk_text(), offset = (12, 12), parent = desk)
 
 canvas = gif.SinglePageCanvas(CANVASSIZE, SPRITESIZE // 4)

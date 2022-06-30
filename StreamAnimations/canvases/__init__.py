@@ -12,13 +12,18 @@ class CanvasBase():
         self.sprites = []
         self.events = dict(movement = [])
 
-    def add_listener(self, event, callback):
+    def add_listener(self, event:str, callback):
         listeners = self.events.get(event, [])
         listeners.append(callback)
         self.events[event] = listeners
 
-    def remove_listener(self, event, callback):
+    def remove_listener(self, event:str, callback):
         self.events.get(event, []).remove(callback)
+
+    def trigger_event(self, eventname: str, eventobject: Event):
+        """ Helper generator function to make triggering events uniform (and aid in debugging) """
+        for callback in self.events[eventname]:
+            yield callback(eventobject)
 
     def add_sprite(self, sprite: Sprite, location: any = None, zindex: int = 0)-> None:
         if not isinstance(sprite, Sprite):
@@ -51,8 +56,7 @@ class CanvasBase():
         x,y, *z = sprite.location
         z = z[0] if z else sprite.zindex
         event = Event(canvas = self, sprite = sprite, x = x, y = y , z = z, dx = dx, dy = dy, dz = dz)
-        for callback in self.events["movement"]:
-            response = callback(event)
+        for response in self.trigger_event("movement", event):
             if response is False:
                 return
         self._execute_move(sprite, direction, deltas)

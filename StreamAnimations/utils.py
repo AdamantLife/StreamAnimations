@@ -36,28 +36,62 @@ def scale_image(img: Image.Image, multiplier:int = 2) -> Image.Image:
     return Image.fromarray(img)
 
 def offset_boundingbox(bbox, deltax, deltay):
-    return bbox[0] - deltax, bbox[1] - deltay, bbox[2] - deltax, bbox[3] - deltay
+    return bbox[0] + deltax, bbox[1] + deltay, bbox[2] + deltax, bbox[3] + deltay
 
 def find_overall_boundingbox(bbox1, bbox2):
     ax0, ay0, ax1, ay1 = bbox1
     bx0, by0, bx1, by1 = bbox2
     return min(ax0, bx0), min(ay0, by0), max(ax1,bx1), max(ay1, by1)
 
+def check_boundingbox_overlap(box1, box2)-> bool:
+    """ Checks if two boxes overlap """
+    ax0, ay0, ax1, ay1 = box1
+    bx0, by0, bx1, by1 = box2
+    ## horizontal displacement
+    if(ax0 >= bx1 or bx0 >= ax1 ): return False
+    ## vertical displacement
+    if(ay0 >= by1 or by0 >= ay1 ): return False
+    return True
+    
+
 def find_overlap_of_images(image1, image2, bbox1 = None, bbox2 = None):
+    """ Returns the overlapping area between two Bi-level images (mode="1" images) relative to the first image provided.
+
+        image1 and image2 are the images to overlap.
+        bbox1 and bbox2 relate to image1 and image2 respectively. If not provided
+            a bbox will be defined as [0,0,image.width, image.height].
+        The bboxes determine how the images are overlayed relative to each other.
+
+        The returned Image is cropped to the bbox of image1 (bbox1).
+    """
     if not bbox1: bbox1 = [0, 0, image1.width, image1.height]
     if not bbox2: bbox2 = [0, 0, image2.width, image2.height]
-    deltax = min(bbox1[0], bbox2[0])
-    deltay = min(bbox1[1], bbox2[1])
+    xmin = min(bbox1[0], bbox2[0])
+    ymin = min(bbox1[1], bbox2[1])
+    deltax = 0 - xmin
+    deltay = 0 - ymin
     bbox1 = offset_boundingbox(bbox1, deltax, deltay)
     bbox2 = offset_boundingbox(bbox2, deltax, deltay)
     overall = find_overall_boundingbox(bbox1, bbox2)
-    print(bbox1, bbox2, overall)
-    i1 = Image.new("1", (overall[2], overall[3]), color = 1)
-    print(image1.size, bbox1)
+    i1 = Image.new("1", (overall[2], overall[3]), color = 0)
     i1.paste(image1, bbox1)
-    i2 = Image.new("1", (overall[2], overall[3]), color = 1)
+    i2 = Image.new("1", (overall[2], overall[3]), color = 0)
     i2.paste(image2, bbox2)
-    return ImageChops.difference(i1, i2)
+    return ImageChops.logical_and(i1, i2).crop(bbox1)
+
+def opaque_mask(image: Image.Image):
+    """ Converts the image to mode=1 (black and white) with the non-transparent portions converted to black """
+    image = image.copy().convert("RGBA")
+    pixels = image.load()
+    for x in range(image.width):
+        for y in range(image.height):
+            ## If pixel's alpha channel is not fully transparent, make it white (1)
+            if pixels[x,y][3] != 0:
+                pixels[x,y] = (255, 255, 255, 255)
+            ## Otherwise, make it black (0)
+            else:
+                pixels[x,y] = (0,0,0,0)
+    return image.convert("1")
 
 if __name__ == "__main__":
     import pathlib
