@@ -1,5 +1,29 @@
 from StreamAnimations.sprite.hitbox import Hitbox
 
+class startlocation():
+    """ A class for memorizing the initial location of a sprite and acting as a context manager to automatically return the sprite to its location. """
+    NULL = object()
+    def __init__(self, sprite, newlocation = NULL):
+        """ Initializes a new startlocation class.
+        
+            newlocation defaults to startlocation.NULL because None is a valid location to set on a sprite
+        """
+        self.sprite = sprite
+        self._initial_location = sprite.location
+        if newlocation is not startlocation.NULL:
+            sprite.location = newlocation
+
+    def revert(self):
+        """ Returns the sprite to its initial location """
+        self.sprite.location = self._initial_location
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, *exc):
+        self.sprite.location = self._initial_location
+
+
 
 class Sprite():
     """ Base class for Sprite Objects """
@@ -27,7 +51,10 @@ class Sprite():
         return self._location
     @location.setter
     def location(self, value: tuple):
-        self._location = tuple(value)
+        if value is None:
+            self._location = value
+        else:
+            self._location = tuple(value)
 
     def cycle_idle(self):
         self.idleindex +=1
@@ -60,6 +87,20 @@ class Sprite():
     def add_hitbox(self, hitbox: Hitbox):
         self.hitboxes.append(hitbox)
         hitbox.sprite = self
+
+    def at(self, location):
+        """ Returns a startlocation instance which is intended to be used as a Context Manager so that
+            the sprite is returned to its current (pre-at()) location when the context is exited
+
+            Example Usage:
+
+            mysprite.location = (0,0)
+            with mysprite.at( (10, 10) ):
+                dosomethingat10_10()
+
+            assert mysprite.location == (0,0)
+        """
+        return startlocation(self, newlocation= location)
 
 class StationarySprite(Sprite):
     def __init__(self, representation: list = []):
