@@ -37,16 +37,16 @@ class CanvasBase():
         if direction is None and offset is None:
             raise ArgumentError("Direction or offset is needed")
         if direction and offset:
-            d = sprite.determine_direction(offset= offset)
+            d = sprite.cs.determine_direction(offset= offset)
             if d != direction:
                 raise ArgumentError("Direction and Offset were and do not match")
         if isinstance(direction, tuple):
             offset = direction
             direction = None
         if direction and not offset:
-            offset = sprite.determine_offset(direction)
+            offset = sprite.cs.determine_offset(direction)
         elif offset and not direction:
-            direction = sprite.determine_direction(offset= offset)
+            direction = sprite.cs.determine_direction(offset= offset)
         deltas = [off*self.steplength for off in offset]
         self._handle_move(sprite, direction, deltas)
 
@@ -65,6 +65,13 @@ class CanvasBase():
         sprite.move(direction)
         sprite.location = [loc+delta for (loc, delta) in zip(sprite.location, deltas)]
 
+    def cycle_animation(self, sprite: Sprite):
+        """ Increments the animation frame for the given Sprite.
+        
+            This is useful for edge cases: most sprites should just rely on idleanimations
+        """
+        sprite.animations.cycle()
+
     def animate_idlesprites(self, idlesprites):
         for sprite in idlesprites:
             sprite.cycle_idle()
@@ -76,6 +83,8 @@ class SinglePageCanvas:
         self.remove_listener("movement", self.check_bounds)
 
     def check_bounds(self, event: Event):
-        if 0 > (targetx:= event.x+event.dx) or targetx > self.size[0]\
-            or 0> (targety := event.y+event.dy) or targety > self.size[1]:
+        targetx= event.x+event.dx
+        targety = event.y+event.dy
+        if 0 > (targetx:= event.x+event.dx) or targetx > self.size[0]-1\
+            or 0> (targety := event.y+event.dy) or targety > self.size[1]-1:
             return False

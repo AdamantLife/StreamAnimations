@@ -55,6 +55,8 @@ class UtilsSpriteTestCase(unittest.TestCase):
 
         spritehitbox = hitbox.MaskedHitbox(hitbox.create_rect_hitbox_image(testutils.SPRITESIZE, self.HITBOXHEIGHT))
         self.sprite = testutils.load_testsprite(hitboxes = [spritehitbox,])
+        ## NOTE: Test images were created when default currentdirection was "Y"/"Down", so sprite may need to be updated
+        self.sprite.currentdirection = "Y"
 
         self.desk = testutils.load_terrain_sprite()
         deskhitbox = hitbox.MaskedHitbox(hitbox.create_rect_hitbox_image(self.desk.get_image().width, self.HITBOXHEIGHT))

@@ -4,12 +4,13 @@ from StreamAnimations.engine import utils as engineutils
 from PIL import Image
 
 class Frame():
-    def __init__(self, canvas):
+    def __init__(self, canvas: CanvasBase, record_hitboxes:bool = False):
         self.canvas = canvas
         self.activesprites = []
         self.resolution = []
+        self.record_hitboxes = record_hitboxes
 
-    def move_sprite(self, sprite, *args, **kw):
+    def move_sprite(self, sprite: sprite.Sprite, *args, **kw):
         self.canvas.move_sprite(sprite, *args, **kw)
         self.activesprites.append(sprite)
     
@@ -17,7 +18,7 @@ class Frame():
         self.canvas.animate_idlesprites([sprite for sprite in self.canvas.sprites if sprite not in self.activesprites])
 
     def record_frame(self):
-        self.resolution = [ (sprite.location, sprite.get_image(), sprite.zindex) for sprite in self.canvas.sprites ]
+        self.resolution = [ (sprite.location, sprite.get_image(with_hitboxes = self.record_hitboxes), sprite.zindex) for sprite in self.canvas.sprites ]
     
     def __enter__(self):
         return self
@@ -45,7 +46,7 @@ class Canvas(CanvasBase):
         """ Add the given Frame Instance to the frames list"""
         self.frames.append(frame)
 
-    def render(self, frame: Frame, scale:int = 1, background = None):
+    def render(self, frame: Frame, scale:int = 1, background: Image.Image = None):
         """ Composite an image of all sprites visible on the canvas """
         if background is None:
             bg = self.get_background()
@@ -69,8 +70,8 @@ class Canvas(CanvasBase):
         self.render(self.frames[0], scale = scale, background= background)\
             .save(output, save_all = True, append_images = [self.render(frame, scale) for frame in self.frames[1:]], duration = duration)
 
-    def frame(self)-> Frame:
-        return Frame(self)
+    def frame(self, *args, **kw)-> Frame:
+        return Frame(self, *args, **kw)
 
 class SinglePageCanvas(Canvas, SinglePageCanvas):
     def __init__(self, size, steplength, background: Image.Image = None, *args, **kw):

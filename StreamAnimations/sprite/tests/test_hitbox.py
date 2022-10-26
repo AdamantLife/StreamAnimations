@@ -18,6 +18,8 @@ class HitboxTestCase(unittest.TestCase):
     def setUp(self) -> None:
         self.HITBOXHEIGHT = 10
         self.sprite = testutils.load_testsprite()
+        ## NOTE: Test images were created when default currentdirection was "Y"/"Down", so sprite may need to be updated
+        self.sprite.animations.current_animation = "Y"
 
         self.desk = testutils.load_terrain_sprite()
 

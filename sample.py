@@ -3,6 +3,7 @@ from StreamAnimations import utils, sprite
 from StreamAnimations.sprite import hitbox
 from StreamAnimations.canvases import gif
 from StreamAnimations.engine import utils as engineutils
+from StreamAnimations.systems import twodimensional
 
 ## Builtin
 import pathlib
@@ -33,22 +34,23 @@ def load_printer():
     for zlevel in range(1,6):
         sheet = utils.import_spritesheet( (SAMPLEDIR / f"Prusa Z{zlevel}.png").resolve())
         frames.extend(utils.split_spritesheet(sheet, SPRITESIZE, SPRITESIZE))
-    return frames
+    return {"idle": frames}
 
 def load_desk():
-    return utils.split_spritesheet(utils.import_spritesheet( (SAMPLEDIR / "Desk-1.png").resolve()), SPRITESIZE, 45)
+    return {"idle":utils.split_spritesheet(utils.import_spritesheet( (SAMPLEDIR / "Desk-1.png").resolve()), SPRITESIZE, 45)}
 
 def load_desk_text():
-    return utils.split_spritesheet(utils.import_spritesheet( (SAMPLEDIR / "stream.png").resolve() ), SPRITESIZE, 21)
+    return {"idle": utils.split_spritesheet(utils.import_spritesheet( (SAMPLEDIR / "stream.png").resolve() ), SPRITESIZE, 21)}
 
-me = sprite.Sprite2D(cardinalsprites= load_walk(), hitboxes = [])
+me = twodimensional.Sprite2D(directionalsprites= load_walk(), hitboxes = [])
 mehitbox = hitbox.MaskedHitbox(hitbox.create_rect_hitbox_image(me.get_image().width, BASEHEIGHT),anchor="bl")
-me.hitboxes.append(mehitbox)
+me.add_hitbox(mehitbox)
 
-printer = sprite.StationarySprite(representation=load_printer())
-desk = sprite.StationarySprite(representation= load_desk())
+printer = sprite.StationarySprite(animations=load_printer())
+desk = sprite.StationarySprite(animations= load_desk())
 deskhitbox = hitbox.MaskedHitbox(hitbox.create_rect_hitbox_image(desk.get_image().width, BASEHEIGHT),anchor="bl")
-monitortext = sprite.CosmeticSprite(idleanimations= load_desk_text(), offset = (12, 12), parent = desk)
+desk.add_hitbox(deskhitbox)
+monitortext = sprite.CosmeticSprite(animations= load_desk_text(), offset = (12, 12), parent = desk)
 
 canvas = gif.SinglePageCanvas(CANVASSIZE, SPRITESIZE // 4)
 canvas.add_sprite(me, (50, 50), zindex=500)
@@ -58,13 +60,11 @@ canvas.add_sprite(desk, (50, 50), zindex=-1)
 canvas.add_listener("movement", engineutils.collision_stop_rule)
 
 ## ANIMATION
-startframe = canvas.frame()
-startframe.record_frame()
-canvas.add_frame(startframe)
+with canvas.frame(): pass
 
 for i in range(100):
-    with canvas.frame() as frame:
-        frame.move_sprite(me, random.choice(sprite.Sprite2D.CARDINALS))
-        frame.move_sprite(printer, offset = (0,0))
+    with canvas.frame(record_hitboxes = True) as frame:
+        frame.move_sprite(me, random.choice(twodimensional.TwoDimensional_4Way.directions()))
+        if(printer.animations.is_last_frame()): printer.animations.pause()
 
 canvas.save((OUTDIR / "map2.gif"), 10, scale = 5)
