@@ -184,7 +184,7 @@ class StationarySprite(Sprite):
 
     def move(self, direction_or_offset =None):
         ## We accept direction_or_offset in order to be compatible with other sprites
-        self.idleanimations.current_index = 0
+        self.animations.current_index = 0
         self.animations.cycle()
 
     def get_image(self, with_hitboxes: bool = False):
@@ -232,7 +232,7 @@ class CosmeticSprite(Sprite):
 
 
 class MobileSprite(Sprite):
-    """ Creates a Sprite for a 2 Dimensional Plane """
+    """ Creates a Sprite which moves around a Coordinate System"""
 
     _COORDINATESYSTEM = None
 

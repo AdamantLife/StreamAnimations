@@ -16,13 +16,13 @@ character = twodimensional.Sprite2D(character, hitboxes = (1,1))
 wall = Image.new(mode="RGBA", size = (1,1), color = (0,0,0))
 
 
-## Map One
-#start = (0,9)
-#walls = [sprite.StationarySprite({"idle":wall}, hitboxes = (1,1)) for w in range(3)]
-#canvas.add_sprite(walls[0], (6,3))
-#canvas.add_sprite(walls[1], (7,3))
-#canvas.add_sprite(walls[2], (7,4))
-#goal = (9,0)
+# Map One
+# start = (0,9)
+# walls = [sprite.StationarySprite({"idle":wall}, hitboxes = (1,1)) for w in range(3)]
+# canvas.add_sprite(walls[0], (6,3))
+# canvas.add_sprite(walls[1], (7,3))
+# canvas.add_sprite(walls[2], (7,4))
+# goal = (9,0)
 
 ## Map Two
 for coord in [

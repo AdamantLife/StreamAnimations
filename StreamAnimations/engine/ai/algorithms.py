@@ -3,7 +3,7 @@ import heapq
 import math
 
 def astar(start: tuple, target: tuple, adjacent: "function", heuristic: "function") -> list:
-    Node = collections.namedtuple("Node", ("heuristiccost", "cost", "coord", "previous"))
+    Node = collections.namedtuple("Node", ("cost", "heuristiccost", "coord", "previous"))
 
     ## Nodes to explore
     exploreheap = list()
@@ -12,7 +12,7 @@ def astar(start: tuple, target: tuple, adjacent: "function", heuristic: "functio
 
     ## Add start node to heap and cache
     heuristiccost = heuristic(start, target)
-    startnode = Node(heuristiccost, 0,start,None)
+    startnode = Node(0, heuristiccost, start,None)
     heapq.heappush(exploreheap, startnode)
     cache[start] = startnode
 
@@ -36,7 +36,7 @@ def astar(start: tuple, target: tuple, adjacent: "function", heuristic: "functio
             heuristiccost = costtonode + heuristic(newcoord, target)
 
             ## Add node to heap and cache
-            newnode = Node(heuristiccost, costtonode, newcoord, currentnode)
+            newnode = Node(costtonode, heuristiccost, newcoord, currentnode)
             heapq.heappush(exploreheap, newnode)
             cache[newcoord] = newnode
 
