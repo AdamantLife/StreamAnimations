@@ -1,4 +1,70 @@
-from StreamAnimations.sprite.hitbox import Hitbox
+from multiprocessing.sharedctypes import Value
+from StreamAnimations.sprite.hitbox import Hitbox, create_rect_hitbox_image
+from StreamAnimations import utils
+from  PIL import Image
+
+class Animations():
+    def __init__(self, **kw):
+        self.animations = dict()
+        for animation, frames in kw.items():
+            self.animations[animation] = AnimationLoop(frames)
+        self.current_animation = list(kw.keys())[0] if kw else -1
+        self._paused = False
+    
+    def pause(self):
+        self._paused = True
+    def unpause(self):
+        self._paused = False
+
+    def set_animation(self, animation: str):
+        ## TODO: handle resetting animations
+        self.current_animation = animation
+
+    def cycle(self, animation:str = None, count:int = 1)-> tuple:
+        """ Cycles the current_index by count (default 1) for the given animation and returns the new index and frame.
+            If animation is not provided, current_animation will be used instead
+
+            Cycle wraps in both directions so the index is never greater than len(frames) or
+            less than 0.
+            If Animation is paused, returns immediately
+        """
+        if self._paused: return
+        animation = self.animations[animation] if animation else self.current_loop()
+        animation.cycle(count)
+
+    def current_loop(self):
+        return self.animations.get(self.current_animation) or self.animations[list(self.animations)[0]]
+
+    def current_frame(self):
+        return self.current_loop().current_frame()
+
+    def is_last_frame(self):
+        return self.current_loop().is_last_frame()
+
+class AnimationLoop():
+    ## TODO: implement resetting animations
+    def __init__(self, frames: list) -> None:
+        ## Makes it easier for non-animated sprites
+        if isinstance(frames,Image.Image): frames = [frames,] 
+        self.frames = list(frames)
+        self.current_index = 0
+
+    def cycle(self, count:int = 1)-> tuple:
+        """ Cycles the current_index by count (default 1) and returns the new index and frame.
+
+            Cycle wraps in both directions so the index is never greater than len(frames) or
+            less than 0.
+        """
+        ## Increment and wrap around to the first frame
+        self.current_index = (self.current_index + count) % len(self.frames)
+        return self.current_index, self.frames[self.current_index]
+
+    def current_frame(self):
+        return self.frames[self.current_index]
+
+    def is_last_frame(self):
+        return self.current_index == len(self.frames) - 1
+    
 
 class startlocation():
     """ A class for memorizing the initial location of a sprite and acting as a context manager to automatically return the sprite to its location. """
@@ -18,7 +84,7 @@ class startlocation():
         self.sprite.location = self._initial_location
 
     def __enter__(self):
-        pass
+        return self
 
     def __exit__(self, *exc):
         self.sprite.location = self._initial_location
@@ -27,24 +93,29 @@ class startlocation():
 
 class Sprite():
     """ Base class for Sprite Objects """
-    def __init__(self, idleanimations = None, hitboxes = None):
+    def __init__(self, animations = None, hitboxes = None):
         """
         hitboxes - a list of Hitbox Objects
         """
         self._location = None
-        self.representation = None
-        
-        if idleanimations is None: idleanimations = []
-        self.idleanimations = list(idleanimations)
+
+        if not animations: animations = dict()
+        self.animations = Animations(**animations)
         
         if not hitboxes:
             hitboxes = list()
+        elif isinstance(hitboxes, tuple) and len(hitboxes) == 2:
+            hitboxes = [Hitbox(create_rect_hitbox_image(*hitboxes)),]
         else:
             hitboxes = list(hitboxes)
         self.hitboxes = hitboxes
+        for hitbox in self.hitboxes: hitbox.sprite = self
         
-        self.idleindex = 0
         self.zindex = 0
+
+    @property
+    def is_idle(self):
+        return self.animations.current_animation == "idle"
 
     @property
     def location(self):
@@ -57,38 +128,24 @@ class Sprite():
             self._location = tuple(value)
 
     def cycle_idle(self):
-        self.idleindex +=1
-        if self.idleindex > len(self.idleanimations)-1: self.idleindex = 0
+        self.animations.set_animation("idle")
+        self.animations.cycle()
 
     def move(self,*args, **kw):
         raise NotImplementedError("Subclass has not implemented move")
 
-    def get_image(self):
+    def get_image(self, with_hitboxes:bool = False):
         raise NotImplementedError("Subclass has not implemented get_image")
 
     @property
     def bbox(self):
         raise NotImplementedError("Subclass has not implemented bbox")
 
-    @classmethod
-    def valid_direction(cls, direction):
-        raise NotImplementedError("Subclass has not implemented valid_direction ")
-
-    @classmethod
-    def determine_direction(cls, offset: tuple)->str:
-        """ Given an offset, determine the direction in which the offset lies """
-        raise NotImplementedError("Subclass has not implemented determine_direction ")
-
-    @classmethod
-    def determine_offset(cls, direction: str)-> tuple:
-        """ Converts a direction to an offset """
-        raise NotImplementedError("Subclass has not implemented determine_offset ")
-
     def add_hitbox(self, hitbox: Hitbox):
         self.hitboxes.append(hitbox)
         hitbox.sprite = self
 
-    def at(self, location):
+    def at(self, location: tuple)-> startlocation:
         """ Returns a startlocation instance which is intended to be used as a Context Manager so that
             the sprite is returned to its current (pre-at()) location when the context is exited
 
@@ -102,41 +159,55 @@ class Sprite():
         """
         return startlocation(self, newlocation= location)
 
+    def paste_hitboxes(self, img):
+        for box in self.hitboxes:
+            bx = box.image
+            color = bx.convert("RGBA")
+            pixels= color.load()
+            for x in range(color.width):
+                for y in range(color.height):
+                    if pixels[x,y] == (255, 255, 255, 255):
+                        pixels[x,y] = (255, 0, 0, 255)
+                    # elif pixels[x,y] == (0, 0, 0, 255):
+                    #     pixels[x,y] = (0, 0 , 0, 0)
+            ## bbox is global: need to convert back to local
+            img.paste(color, utils.offset_boundingbox(box.bbox, -self.location[0], -self.location[1]), bx)
+        return img
+
 class StationarySprite(Sprite):
-    def __init__(self, representation: list = []):
-        super().__init__()
-        self.representation = list(representation)
-        ## Current animation frame
-        self.frame = 0
+    """ A Class for Sprites that animate without moving and do not rely on idle animations.
+        Typically this sprite's animations are triggered by an outside force.
+        
+    """ 
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
 
     def move(self, direction_or_offset =None):
-        self.idleindex = 0
-        self.frame+=1
-        if self.frame > len(self.representation)-1: self.frame = 0
+        ## We accept direction_or_offset in order to be compatible with other sprites
+        self.animations.current_index = 0
+        self.animations.cycle()
 
-    def get_image(self):
-        return self.representation[self.frame]
+    def get_image(self, with_hitboxes: bool = False):
+        img = self.animations.current_frame()
+        if with_hitboxes: return self.paste_hitboxes(img)
+        return img
 
     @property
     def bbox(self):
         img = self.get_image()
         return [self.location[0], self.location[1], self.location[0]+img.width, self.location[1]+img.height]
 
-    def valid_direction(self, direction):
-        return True
-    def determine_direction(self, offset):
-        return None
-    def determine_offset(self, direction): return None
-
 class CosmeticSprite(Sprite):
-    def __init__(self, idleanimations: list = [], parent = None, offset = None, zindex = 1):
-        super().__init__(idleanimations)
+    def __init__(self, parent = None, offset = None, zindex = 1, **kw):
+        super().__init__(**kw)
         self.parent = parent
         self.offset = offset
         self._zindex = zindex
 
-    def get_image(self):
-        return self.idleanimations[self.idleindex]
+    def get_image(self, with_hitboxes:bool = False):
+        img = self.animations.current_frame()
+        if with_hitboxes: return self.paste_hitboxes(img)
+        return img
 
     @property
     def location(self):
@@ -160,86 +231,62 @@ class CosmeticSprite(Sprite):
         return [self.location[0], self.location[1], self.location[0]+img.width, self.location[1]+img.height]
 
 
-class Sprite2D(Sprite):
-    CARDINALS = ["up", "down", "left", "right"]
-    CARDINALOFFSETS = {
-        -1: "up",
-        +1: "down",
-        +1: "right",
-        -1: "left",
-        "up": (0,-1),
-        "down": (0, +1),
-        "right": (+1, 0),
-        "left": (-1, 0)
-    }
-    """ Creates a Sprite for a 2 Dimensional Plane """
-    def __init__(self, cardinalsprites: dict = None, *args, **kw) -> None:
+class MobileSprite(Sprite):
+    """ Creates a Sprite which moves around a Coordinate System"""
+
+    _COORDINATESYSTEM = None
+
+    def __init__(self, directionalsprites: dict = None, coordinatesystem = None, *args, **kw) -> None:
         """ """
-        super().__init__(*args, **kw)
-        self.representation = dict()
-        ## Current cardinal directionm the sprite is facing
-        self.currentdirection = "down"
-        ## Current animation frame
-        self.frame = 0
-        for cardinal in self.CARDINALS:
-            if self.representation.get(cardinal) is None: self.representation[cardinal] = []
+        if coordinatesystem: self._COORDINATESYSTEM = coordinatesystem
+
+        animations = kw.pop("animations", {})
+        ## Make sure animations is prepopulated with all directions
+        for direction in self._COORDINATESYSTEM.directions():
+            if not animations.get(direction): animations[direction] = []
+
+        ## Validate and normalize directions before adding them to animations
+        if directionalsprites:
+            for [direction,sprites] in directionalsprites.items():
+                ndir = self._COORDINATESYSTEM.normalize_direction(direction)
+                animations[ndir] = sprites
+
+        super().__init__(*args, animations= animations, **kw)
         
-        if cardinalsprites:
-            for cardinal in self.CARDINALS:
-                if cardinal in cardinalsprites:
-                    self.representation[cardinal] = list(cardinalsprites[cardinal])
+                        
 
+    @property
+    def cs(self):
+        return self._COORDINATESYSTEM
 
-    @classmethod
-    def valid_direction(cls, direction):
-        if direction not in cls.CARDINALS:
-            raise ValueError(f"Not a valid direction: {direction}")
+    def valid_moves(self, engine: "engine.Engine", atlocation: "coordinates.Coordinate" = None):
+        """ Checks which directions the sprite can move in """
+        for direction in self.cs.directions():
+            with self.at(atlocation) as start:
+                engine.move_sprite(self, direction)
+                if self.location != atlocation:
+                    yield direction
 
-    @classmethod
-    def determine_direction(cls, offset: tuple)->str:
-        """ Given an offset, determine the direction in which the offset lies """
-        if offset[0] == 0 and offset[1] == 0: return
-        if abs(offset[0]) >= abs(offset[1]):
-            if offset[0] > 0: return "right"
-            return "left"
-        if offset[1] > 0: return "down"
-        return "up"
-
-    @classmethod
-    def determine_offset(cls, direction: str)-> tuple:
-        """ Converts a direction to an offset """
-        cls.valid_direction(direction)
-        return cls.CARDINALOFFSETS[direction]
-
-    def move(self, cardinal):
+    def move(self, direction):
         """ Increment the sprite's frame in the given direction """
-        self.valid_direction(cardinal)
-        self.idleindex = 0
+        direction = self.cs.normalize_direction(direction)
 
-        if cardinal != self.currentdirection:
-            self.frame = 0
-            self.currentdirection = cardinal
+        ## We are now using self.animations to "track" our direction
+        if direction != self.animations.current_animation:
+            self.animations.set_animation(direction)
 
         else:
-            self.frame += 1
-            if self.frame > len(self.representation.get(cardinal))-1: self.frame = 0
-        
-    def up(self):
-        self.move("up")
-    def down(self):
-        self.move("down")
-    def left(self):
-        self.move("left")
-    def right(self):
-        self.move("right")
+            self.animations.cycle()
 
-    def get_image(self):
-        return self.representation[self.currentdirection][self.frame]
+    def get_image(self, with_hitboxes: bool = False):
+        img = self.animations.current_frame()
+        if with_hitboxes: return self.paste_hitboxes(img)
+        return img
 
     @property
     def bbox(self):
         img = self.get_image()
         return [self.location[0], self.location[1], self.location[0]+img.width, self.location[1]+img.height]
 
-class Pivotting2DSprite(Sprite2D): pass
+class Pivotting2DSprite(MobileSprite): pass
 

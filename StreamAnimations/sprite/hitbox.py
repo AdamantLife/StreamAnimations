@@ -10,8 +10,8 @@ def create_rect_hitbox_image(width:int, height:int)-> Image.Image:
     return Image.new("1", (width, height), 255)
 
 class Hitbox():
-    def __init__(self, image) -> None:
-        self.sprite = None
+    def __init__(self, image, sprite= None) -> None:
+        self.sprite = sprite
         self._image = image.convert("1")
 
     @property
