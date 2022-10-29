@@ -42,29 +42,37 @@ def load_desk():
 def load_desk_text():
     return {"idle": utils.split_spritesheet(utils.import_spritesheet( (SAMPLEDIR / "stream.png").resolve() ), SPRITESIZE, 21)}
 
-me = twodimensional.Sprite2D(directionalsprites= load_walk(), hitboxes = [])
+walk = load_walk()
+me = twodimensional.Sprite2D(directionalsprites= walk, hitboxes = [], animations = {"idle":[walk['down'][0],]})
 mehitbox = hitbox.MaskedHitbox(hitbox.create_rect_hitbox_image(me.get_image().width, BASEHEIGHT),anchor="bl")
 me.add_hitbox(mehitbox)
 
 printer = sprite.StationarySprite(animations=load_printer())
+printerhitbox = hitbox.MaskedHitbox(hitbox.create_rect_hitbox_image(printer.get_image().width, BASEHEIGHT//2), anchor="bl")
+printer.add_hitbox(printerhitbox)
 desk = sprite.StationarySprite(animations= load_desk())
 deskhitbox = hitbox.MaskedHitbox(hitbox.create_rect_hitbox_image(desk.get_image().width, BASEHEIGHT),anchor="bl")
 desk.add_hitbox(deskhitbox)
 monitortext = sprite.CosmeticSprite(animations= load_desk_text(), offset = (12, 12), parent = desk)
 
 canvas = gif.SinglePageCanvas(CANVASSIZE, SPRITESIZE // 4)
-canvas.add_sprite(me, (50, 50), zindex=500)
+canvas.add_listener("movement", engineutils.collision_stop_rule)
+
+canvas.add_sprite(me, (50, 70), zindex=500)
 canvas.add_sprite(printer, (80,80))
 canvas.add_sprite(monitortext, (0,0))
 canvas.add_sprite(desk, (50, 50), zindex=-1)
-canvas.add_listener("movement", engineutils.collision_stop_rule)
+
 
 ## ANIMATION
 with canvas.frame(): pass
 
+path = ["down", "down", "right","right","right"]
+
 for i in range(100):
     with canvas.frame(record_hitboxes = True) as frame:
-        frame.move_sprite(me, random.choice(twodimensional.TwoDimensional_4Way.directions()))
+        #frame.move_sprite(me, random.choice(twodimensional.TwoDimensional_4Way.directions()))
+        if path: frame.move_sprite(me, path.pop())
         if(printer.animations.is_last_frame()): printer.animations.pause()
 
 canvas.save((OUTDIR / "map2.gif"), 10, scale = 5)

@@ -240,7 +240,7 @@ class MobileSprite(Sprite):
         """ """
         if coordinatesystem: self._COORDINATESYSTEM = coordinatesystem
 
-        animations = kw.get("animations", {})
+        animations = kw.pop("animations", {})
         ## Make sure animations is prepopulated with all directions
         for direction in self._COORDINATESYSTEM.directions():
             if not animations.get(direction): animations[direction] = []
