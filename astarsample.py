@@ -1,4 +1,5 @@
-from StreamAnimations.canvases.gif import SinglePageCanvas
+from StreamAnimations.engine.renderers.gif import GifRenderer
+from StreamAnimations.canvases import SinglePageCanvas
 from StreamAnimations import sprite
 from StreamAnimations.engine.ai.algorithms import astar
 from StreamAnimations.engine.ai.heuristics.distances import squaredistance, lineardistance
@@ -8,7 +9,8 @@ from StreamAnimations.systems import twodimensional
 from PIL import Image
 
 
-canvas = SinglePageCanvas((10,10), steplength=1, background = Image.new("RGBA",(10,10), (173, 216, 230,255)))
+canvas = SinglePageCanvas((10,10), steplength=1)
+renderer = GifRenderer(canvas, background = Image.new("RGBA",(10,10), (173, 216, 230,255)))
 canvas.add_listener("movement", collision_stop_rule)
 character = Image.new(mode= "RGBA",size= (1,1), color= (255,0,0))
 character = {direction:[character] for direction in twodimensional.TwoDimensional_4Way.directions()}
@@ -53,8 +55,7 @@ goal = (8,3)
 
 ## Add character
 canvas.add_sprite(character, start)
-##  Get initial frame
-with canvas.frame(): pass
+
 ## Get astar path
 characterpath = astar(
     character.location,         ## Start Location
@@ -65,13 +66,16 @@ characterpath = astar(
          for dire in character.valid_moves(canvas, start)]          ## For each direction in valid_moves (returns direction names)
          )
 
-## Convert path to canvas frames (animate)
+##  Renderer initial frame
+with renderer.frame(): pass
+
+## Convert path to rendered frames (animate)
 for coordinate in characterpath:
-    with canvas.frame() as f:
+    with renderer.frame() as f:
         offset = character.cs.calculate_offset(coordinate, character.location)
         ## No movement, typically this is the start coordinate
         if not any(coord for coord in offset): continue
         f.move_sprite(character, offset = offset)
 
 ## Save
-canvas.save("map.gif", 10, scale = 5)
+renderer.save("map.gif", 10, scale = 5)

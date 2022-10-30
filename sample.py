@@ -1,7 +1,8 @@
 ## This module
 from StreamAnimations import utils, sprite
 from StreamAnimations.sprite import hitbox
-from StreamAnimations.canvases import gif
+from StreamAnimations.canvases import SinglePageCanvas
+from StreamAnimations.engine.renderers.gif import GifRenderer
 from StreamAnimations.engine import utils as engineutils
 from StreamAnimations.systems import twodimensional
 
@@ -55,24 +56,25 @@ deskhitbox = hitbox.MaskedHitbox(hitbox.create_rect_hitbox_image(desk.get_image(
 desk.add_hitbox(deskhitbox)
 monitortext = sprite.CosmeticSprite(animations= load_desk_text(), offset = (12, 12), parent = desk)
 
-canvas = gif.SinglePageCanvas(CANVASSIZE, SPRITESIZE // 4)
+canvas = SinglePageCanvas(CANVASSIZE, SPRITESIZE // 4)
 canvas.add_listener("movement", engineutils.collision_stop_rule)
 
-canvas.add_sprite(me, (50, 70), zindex=500)
+canvas.add_sprite(me, (50, 70))
 canvas.add_sprite(printer, (80,80))
 canvas.add_sprite(monitortext, (0,0))
-canvas.add_sprite(desk, (50, 50), zindex=-1)
+canvas.add_sprite(desk, (50, 50))
 
 
 ## ANIMATION
-with canvas.frame(): pass
+renderer = GifRenderer(canvas, sorter= twodimensional.twod_sprite_sorter)
+with renderer.frame(): pass
 
-path = ["down", "down", "right","right","right"]
+path = ["right","right","right","right","right", "up", "up", "up", "up","left","left","left","left","left"]
 
 for i in range(100):
-    with canvas.frame(record_hitboxes = True) as frame:
+    with renderer.frame(record_hitboxes = True) as frame:
         #frame.move_sprite(me, random.choice(twodimensional.TwoDimensional_4Way.directions()))
-        if path: frame.move_sprite(me, path.pop())
+        if path: frame.move_sprite(me, path.pop(0))
         if(printer.animations.is_last_frame()): printer.animations.pause()
 
-canvas.save((OUTDIR / "map2.gif"), 10, scale = 5)
+renderer.save((OUTDIR / "map2.gif"), 10, scale = 5)

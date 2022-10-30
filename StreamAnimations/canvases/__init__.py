@@ -76,7 +76,7 @@ class CanvasBase():
         for sprite in idlesprites:
             sprite.cycle_idle()
 
-class SinglePageCanvas:
+class SinglePageMixin:
     def attach_singlepage(self):
         self.add_listener("movement", self.check_bounds)
     def detach_singlepage(self):
@@ -88,3 +88,8 @@ class SinglePageCanvas:
         if 0 > (targetx:= event.x+event.dx) or targetx > self.size[0]-1\
             or 0> (targety := event.y+event.dy) or targety > self.size[1]-1:
             return False
+
+class SinglePageCanvas(CanvasBase, SinglePageMixin):
+    def __init__(self, *args, **kw) -> None:
+        super().__init__(*args, **kw)
+        self.attach_singlepage()
