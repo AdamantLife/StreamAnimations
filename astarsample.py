@@ -6,7 +6,15 @@ from StreamAnimations.engine.ai.heuristics.distances import squaredistance, line
 from StreamAnimations.engine.utils import collision_stop_rule
 from StreamAnimations.systems import twodimensional
 
+## Third Party
 from PIL import Image
+
+## Builtin
+import pathlib
+
+ROOT = pathlib.Path(__file__).resolve().parent
+OUTDIR = ( ROOT / "output").resolve()
+OUTDIR.mkdir(exist_ok = True)
 
 
 canvas = SinglePageCanvas((10,10), steplength=1)
@@ -19,6 +27,7 @@ wall = Image.new(mode="RGBA", size = (1,1), color = (0,0,0))
 
 
 # Map One
+# MAP=1
 # start = (0,9)
 # walls = [sprite.StationarySprite({"idle":wall}, hitboxes = (1,1)) for w in range(3)]
 # canvas.add_sprite(walls[0], (6,3))
@@ -27,6 +36,7 @@ wall = Image.new(mode="RGBA", size = (1,1), color = (0,0,0))
 # goal = (9,0)
 
 ## Map Two
+MAP=2
 for coord in [
     ## First Column (empty)
     ## Second Column
@@ -78,4 +88,4 @@ for coordinate in characterpath:
         f.move_sprite(character, offset = offset)
 
 ## Save
-renderer.save("map.gif", 10, scale = 5)
+renderer.save((OUTDIR/f"astar-map{MAP}.gif").resolve(), 10, scale = 5)
