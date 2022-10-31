@@ -29,8 +29,10 @@ class CanvasBase():
         if not isinstance(sprite, Sprite):
             raise TypeError("Can only add Sprites to the canvas")
         self.sprites.append(sprite)
-        sprite.location = location
-        sprite.zindex = zindex
+        if location:
+            sprite.location = location
+        if zindex:
+            sprite.zindex = zindex
 
     def move_sprite(self, sprite: Sprite, direction: str = None, offset: tuple = None)-> None:
         """ Animates the given sprite and updates its location based on the provided movement """

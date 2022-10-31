@@ -27,6 +27,7 @@ def mirror_sprite(sprite: list):
 
 def scale_image(img: Image.Image, multiplier:int = 2) -> Image.Image:
     """ Scales an image by the given multiplier """
+    if multiplier is None: multiplier = 2
     multiplier = int(multiplier)
     if multiplier == 1: return img
     if multiplier < 1: raise ValueError("Image can only be scaled up")

@@ -1,22 +1,27 @@
-## This module
+## This Module
 from StreamAnimations import utils, sprite
 from StreamAnimations.sprite import hitbox
 from StreamAnimations.canvases import SinglePageCanvas
-from StreamAnimations.engine.renderers.gif import GifRenderer
 from StreamAnimations.engine import utils as engineutils
 from StreamAnimations.systems import twodimensional
+
+## Renderer
+from StreamAnimations.engine.renderers.tkinter import TkinterCanvas
+
+## Buitlin
+import tkinter as tk
 
 ## Builtin
 import pathlib
 import random
 
 ROOT = pathlib.Path(__file__).resolve().parent
-OUTDIR = ( ROOT / "output").resolve()
-OUTDIR.mkdir(exist_ok = True)
 SAMPLEDIR = (ROOT / "samples").resolve()
 SPRITESIZE = 32
-CANVASSIZE = 384, 216
+CANVASSIZE = 1920, 1080
 BASEHEIGHT = 10
+FRAMERATE = 16
+
 
 def load_walk():
     up, down, right = utils.import_spritesheet((SAMPLEDIR / "Walk Up.png").resolve()), \
@@ -54,27 +59,34 @@ printer.add_hitbox(printerhitbox)
 desk = sprite.StationarySprite(animations= load_desk())
 deskhitbox = hitbox.MaskedHitbox(hitbox.create_rect_hitbox_image(desk.get_image().width, BASEHEIGHT),anchor="bl")
 desk.add_hitbox(deskhitbox)
-monitortext = sprite.CosmeticSprite(animations= load_desk_text(), offset = (12, 12), parent = desk)
+monitortext = sprite.CosmeticSprite(animations= load_desk_text(), offset = (12,12), parent = desk)
 
 canvas = SinglePageCanvas(CANVASSIZE, SPRITESIZE // 4)
 canvas.add_listener("movement", engineutils.collision_stop_rule)
 
 canvas.add_sprite(me, (50, 70))
 canvas.add_sprite(printer, (80,80))
-canvas.add_sprite(monitortext, (0,0))
+canvas.add_sprite(monitortext)
 canvas.add_sprite(desk, (50, 50))
-
-
-## ANIMATION
-renderer = GifRenderer(canvas, sorter= twodimensional.twod_sprite_sorter)
-with renderer.frame(): pass
 
 path = ["right","right","right","right","right", "up", "up", "up", "up","left","left","left","left","left"]
 
-for i in range(100):
-    with renderer.frame() as frame:
-        #frame.move_sprite(me, random.choice(twodimensional.TwoDimensional_4Way.directions()))
-        if path: frame.move_sprite(me, path.pop(0))
-        if(printer.animations.is_last_frame()): printer.animations.pause()
 
-renderer.save((OUTDIR / "map2.gif"), 10, scale = 5)
+def movecallback():
+    if path: canvas.move_sprite(me, path.pop(0))
+    if(printer.animations.is_last_frame()): printer.animations.pause()
+    idles = []
+    for sprite in canvas.sprites:
+        if sprite != me:
+            idles.append(sprite)
+    canvas.animate_idlesprites(idles)
+    renderer.render(scale = renderer.scale, background = renderer.background)
+    root.after(1000//FRAMERATE, movecallback)
+
+root = tk.Tk()
+tkcanvas = tk.Canvas(root, width= CANVASSIZE[0], height = CANVASSIZE[1])
+tkcanvas.pack()
+renderer = TkinterCanvas(canvas, tkcanvas, framerate=FRAMERATE, scale = 5)
+renderer.render(scale = renderer.scale, background = renderer.background)
+root.after(1000//FRAMERATE, movecallback)
+root.mainloop()

@@ -53,7 +53,7 @@ class GifRenderer():
         """ Add the given Frame Instance to the frames list"""
         self.frames.append(frame)
 
-    def render(self, frame: Frame, scale:int = 1, background: Image.Image = None):
+    def render(self, scale:int = 1, background: Image.Image = None, frame: Frame):
         """ Composite an image of all sprites visible on the canvas """
         if background is None:
             bg = self.get_background()
@@ -78,8 +78,8 @@ class GifRenderer():
             raise AttributeError("No frames created: Gif would be empty")
         duration = 1000//framerate
         background = utils.scale_image(self.get_background(), scale)
-        self.render(self.frames[0], scale = scale, background= background)\
-            .save(output, save_all = True, append_images = [self.render(frame, scale) for frame in self.frames[1:]], duration = duration)
+        self.render(frame = self.frames[0], scale = scale, background= background)\
+            .save(output, save_all = True, append_images = [self.render(frame=frame, scale=scale) for frame in self.frames[1:]], duration = duration)
 
     def frame(self, *args, **kw)-> Frame:
         return Frame(self, *args, **kw)
