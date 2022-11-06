@@ -22,7 +22,7 @@ renderer = GifRenderer(canvas, background = Image.new("RGBA",(10,10), (173, 216,
 canvas.add_listener("movement", collision_stop_rule)
 character = Image.new(mode= "RGBA",size= (1,1), color= (255,0,0))
 character = {direction:[character] for direction in twodimensional.TwoDimensional_4Way.directions()}
-character = twodimensional.Sprite2D(character, hitboxes = (1,1))
+character = twodimensional.MobileSprite(character, hitboxes = (1,1))
 wall = Image.new(mode="RGBA", size = (1,1), color = (0,0,0))
 
 

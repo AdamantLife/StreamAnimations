@@ -23,12 +23,24 @@ def find_collisions(hitbox1: hitbox.Hitbox, hitbox2: hitbox.Hitbox):
     return bool(result.getbbox())
 
 
-def collision_stop_rule(event: Event):
-    """ Movement Event Rule which prevents Collisions """
-    targetsprite = event.sprite
-    canvas = event.canvas
-    targetx, targety = event.x + event.dx, event.y + event.dy
-    with targetsprite.at( (targetx, targety) ):
-        for (hitbox, hurtbox) in find_nearby_sprites(targetsprite, canvas.sprites):
-            if find_collisions(hitbox, hurtbox):
-                return False
+def collision_callback_rule(callback):
+    """ Returns a function which checks for collisions, triggers the provided
+        callback with the collision as part of the Event, and returns the result
+        of the callback
+
+        The callback should accept the movement Event as a parameter. The hitbox
+            that was involved in the collision is set as event.collisionhitbox.
+    """
+    def rule(event: Event):
+        targetsprite = event.sprite
+        canvas = event.canvas
+        targetx, targety = event.x + event.dx, event.y + event.dy
+        with targetsprite.at( (targetx, targety) ):
+            for (hitbox, hurtbox) in find_nearby_sprites(targetsprite, [sprite for sprite in canvas.sprites if sprite.zindex > -1]):
+                if find_collisions(hitbox, hurtbox):
+                    event.collisionhitbox = hurtbox
+                    return callback(event)
+    return rule
+
+""" When a collision is detected, False is always returned (the move is canceled) """
+collision_stop_rule = collision_callback_rule(lambda event: False)

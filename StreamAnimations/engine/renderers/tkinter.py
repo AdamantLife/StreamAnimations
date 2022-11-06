@@ -1,17 +1,24 @@
 ## This module
 from StreamAnimations import utils
+
+## Builtin
+import tkinter as tk
+
 ## 3rd Party
 from PIL import ImageTk
 
 class TkinterCanvas():
 
-    def __init__(self, canvas: "canvases.CanvasBase", tkcanvas:"tk.Canvas", framerate: int, scale: float = 1.0, background: "PIL.Image" = None):
+    def __init__(self, canvas: "canvases.CanvasBase", tkcanvas:tk.Canvas, framerate: int, scale: float = 1.0, background: "PIL.Image" = None):
         self.canvas = canvas
         self.tkcanvas = tkcanvas
         self.framerate = framerate
         self.callback = None
         self.scale = scale
         self.background = background
+        if self.background:
+            self.background = ImageTk.PhotoImage(self.background)
+            self.tkcanvas.create_image(0, 0, anchor= "nw", image = self.background)
         """Collects information on sprites displayed, their canvas
             id, where they are on the canvas, and their current animation
             in order to determine blotting
@@ -45,14 +52,12 @@ class TkinterCanvas():
         if scale is None: scale = self.scale
 
         ## Create PhotoImage at scale of the sprite
-        image = utils.scale_image(sprite.get_image(), self.scale)
+        image = sprite.get_image(scale = scale)
         photo = ImageTk.PhotoImage(image)
-
-        print(sprite.location, sprite.location[0]*scale, sprite.location[1]*scale)
 
         _id = self.tkcanvas.create_image(sprite.location[0]*scale, sprite.location[1]*scale, image = photo, anchor = "nw")
 
-        self.sprites[sprite] = dict(id = _id, photo=photo, location = sprite.location, animation = sprite.animations.current_loop(), frame = sprite.animations.current_frame(), zindex = sprite.zindex*100_000+sprite.location[1])
+        self.sprites[sprite] = dict(id = _id, photo=photo, location = sprite.location, animation = sprite.animations.current_loop(), image = sprite.get_image(), zindex = sprite.zindex*100_000+sprite.location[1])
 
     def remove_sprite(self, sprite: "sprites.Sprite"):
         """ Removes a sprite from the canvas and from self.sprites """
@@ -63,14 +68,14 @@ class TkinterCanvas():
         """ Changes the image for the sprite currently displayed on the canvas """
         if scale is None: scale = self.scale
         ## Create PhotoImage at scale of the sprite
-        image = utils.scale_image(sprite.get_image(), scale)
+        image = sprite.get_image(scale = scale)
         photo = ImageTk.PhotoImage(image)
         
         ## Update the sprite's image on the TK Canvas
         self.tkcanvas.itemconfigure(self.sprites[sprite]['id'], image = photo)
 
         ## Update animation information for the sprite
-        update = dict(photo=photo, animation = sprite.animations.current_loop(), frame = sprite.animations.current_frame())
+        update = dict(photo=photo, animation = sprite.animations.current_loop(), image = image)
         self.sprites[sprite].update(update)
 
 
@@ -113,7 +118,7 @@ class TkinterCanvas():
                         self.set_sprite_location(sprite, scale = scale)
 
                     ## Sprite's animation has changed
-                    if ssp['animation'] != sprite.animations.current_loop() or ssp['frame'] != sprite.animations.current_frame():
+                    if ssp['animation'] != sprite.animations.current_loop() or ssp['image'] != sprite.get_image():
                         self.set_sprite_animation(sprite)
 
         ## This sprite is no longer in canvas.sprites

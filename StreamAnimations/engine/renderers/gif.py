@@ -31,7 +31,7 @@ class Frame():
 
 class GifRenderer():
     def default_sorter(*resolution):
-        result = sorted(enumerate(resolution), key = lambda res: res[1][2], reverse=True)
+        result = sorted(enumerate(resolution), key = lambda res: res[1][1], reverse=True)
         return [enum for enum, res in result]
 
     def __init__(self, canvas: CanvasBase, background: Image.Image = None, *, sorter = default_sorter):
@@ -53,7 +53,7 @@ class GifRenderer():
         """ Add the given Frame Instance to the frames list"""
         self.frames.append(frame)
 
-    def render(self, scale:int = 1, background: Image.Image = None, frame: Frame):
+    def render(self, frame: Frame, scale:int = 1, background: Image.Image = None):
         """ Composite an image of all sprites visible on the canvas """
         if background is None:
             bg = self.get_background()
@@ -62,6 +62,7 @@ class GifRenderer():
             bg = background.copy()
 
         spritelocations = [(location, zindex) for (location, image, zindex) in frame.resolution]
+
         ## Sorters should return sprite indices based on how close they are to
         ## the camera, but we draw them furthest away first (hence reveresed)
         for spriteindex in reversed(self.sorter(*spritelocations)):

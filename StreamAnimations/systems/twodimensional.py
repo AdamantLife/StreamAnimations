@@ -1,5 +1,5 @@
 from StreamAnimations import coordinates
-from StreamAnimations.sprite import MobileSprite
+from StreamAnimations import sprite
 
 class TwoDimensional_4Way(coordinates.CoordinateSystem):
     _AXES = ["x","y"]
@@ -17,10 +17,17 @@ class TwoDimensional_4Way(coordinates.CoordinateSystem):
 @coordinates.mixeddirection
 class TwoDimensional_8Way(TwoDimensional_4Way): pass
 
-
-class Sprite2D(MobileSprite):
+class Sprite(sprite.Sprite):
     _COORDINATESYSTEM = TwoDimensional_4Way
 
+class StationarySprite(sprite.StationarySprite):
+    _COORDINATESYSTEM = TwoDimensional_4Way
+    
+class CosmeticSprite(sprite.CosmeticSprite):
+    _COORDINATESYSTEM = TwoDimensional_4Way
+
+class MobileSprite(sprite.MobileSprite):
+    _COORDINATESYSTEM = TwoDimensional_4Way
     def up(self):
         self.move("up")
     def down(self):
@@ -29,6 +36,11 @@ class Sprite2D(MobileSprite):
         self.move("left")
     def right(self):
         self.move("right")
+
+class CounterHUD(sprite.CounterHUD):
+    _COORDINATESYSTEM = TwoDimensional_4Way
+class BarHUD(sprite.BarHUD):
+    _COORDINATESYSTEM = TwoDimensional_4Way
 
 
 def twod_sprite_sorter(*positions: tuple) -> list:

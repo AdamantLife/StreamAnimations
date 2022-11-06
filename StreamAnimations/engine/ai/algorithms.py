@@ -3,7 +3,17 @@ import heapq
 import math
 
 def astar(start: tuple, target: tuple, adjacent: "function", heuristic: "function") -> list:
-    Node = collections.namedtuple("Node", ("cost", "heuristiccost", "coord", "previous"))
+    if not isinstance(start, tuple): start = tuple(start)
+
+    ## ALlowing a callable allowes for different implementations
+    if not callable(target):
+        if not isinstance(target, tuple):
+            target = tuple(target)
+        is_target = lambda node: node.coord == target
+    else:
+        is_target = target
+
+    Node = collections.namedtuple("Node", ("heuristiccost", "cost", "coord", "previous"))
 
     ## Nodes to explore
     exploreheap = list()
@@ -12,31 +22,31 @@ def astar(start: tuple, target: tuple, adjacent: "function", heuristic: "functio
 
     ## Add start node to heap and cache
     heuristiccost = heuristic(start, target)
-    startnode = Node(0, heuristiccost, start,None)
+    startnode = Node(heuristiccost, 0, start,None)
     heapq.heappush(exploreheap, startnode)
     cache[start] = startnode
 
     ## On each iteration, remove lowest cost 
-    while exploreheap and (currentnode := heapq.heappop(exploreheap)).coord != target:
+    while exploreheap and not is_target((currentnode := heapq.heappop(exploreheap))):
         ## Cannot reach target
         if math.isinf(currentnode.heuristiccost): continue
         for (newcoord, movecost) in adjacent(currentnode.coord):
             costtonode = currentnode.cost + movecost
+            ## Best guess at total cost to target via this node
+            heuristiccost = costtonode + heuristic(newcoord, target)
+
+            newnode = Node(heuristiccost, costtonode, newcoord, currentnode)
+
             if newcoord in cache:
                 ## It is faster to go from currentnode to the new node
                 ## than from the new node's previous node that was cached
                 if costtonode < cache[newcoord].cost:
-                    ## Update with this cost and previous node
-                    cache[newcoord].cost = costtonode
-                    cache[newcoord].previous = currentnode
+                    ## Replace cache coord
+                    cache[newcoord] = newnode
                 ## return (because this node was already explored/on the heap)
                 continue
-
-            ## Best guess at total cost to target via this node
-            heuristiccost = costtonode + heuristic(newcoord, target)
-
+            
             ## Add node to heap and cache
-            newnode = Node(costtonode, heuristiccost, newcoord, currentnode)
             heapq.heappush(exploreheap, newnode)
             cache[newcoord] = newnode
 

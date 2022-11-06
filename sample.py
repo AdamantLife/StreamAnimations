@@ -1,5 +1,5 @@
 ## This module
-from StreamAnimations import utils, sprite
+from StreamAnimations import utils
 from StreamAnimations.sprite import hitbox
 from StreamAnimations.canvases import SinglePageCanvas
 from StreamAnimations.engine.renderers.gif import GifRenderer
@@ -44,17 +44,17 @@ def load_desk_text():
     return {"idle": utils.split_spritesheet(utils.import_spritesheet( (SAMPLEDIR / "stream.png").resolve() ), SPRITESIZE, 21)}
 
 walk = load_walk()
-me = twodimensional.Sprite2D(directionalsprites= walk, hitboxes = [], animations = {"idle":[walk['down'][0],]})
+me = twodimensional.MobileSprite(hitboxes = [], animations = dict(idle=walk['down'][0], **walk))
 mehitbox = hitbox.MaskedHitbox(hitbox.create_rect_hitbox_image(me.get_image().width, BASEHEIGHT),anchor="bl")
 me.add_hitbox(mehitbox)
 
-printer = sprite.StationarySprite(animations=load_printer())
+printer = twodimensional.StationarySprite(animations=load_printer())
 printerhitbox = hitbox.MaskedHitbox(hitbox.create_rect_hitbox_image(printer.get_image().width, BASEHEIGHT//2), anchor="bl")
 printer.add_hitbox(printerhitbox)
-desk = sprite.StationarySprite(animations= load_desk())
+desk = twodimensional.StationarySprite(animations= load_desk())
 deskhitbox = hitbox.MaskedHitbox(hitbox.create_rect_hitbox_image(desk.get_image().width, BASEHEIGHT),anchor="bl")
 desk.add_hitbox(deskhitbox)
-monitortext = sprite.CosmeticSprite(animations= load_desk_text(), offset = (12, 12), parent = desk)
+monitortext = twodimensional.CosmeticSprite(animations= load_desk_text(), offset = (12, 12), parent = desk)
 
 canvas = SinglePageCanvas(CANVASSIZE, SPRITESIZE // 4)
 canvas.add_listener("movement", engineutils.collision_stop_rule)

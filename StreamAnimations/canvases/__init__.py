@@ -33,6 +33,7 @@ class CanvasBase():
             sprite.location = location
         if zindex:
             sprite.zindex = zindex
+        sprite.location = sprite.cs.round_to_steplength(sprite.location, self.steplength)
 
     def move_sprite(self, sprite: Sprite, direction: str = None, offset: tuple = None)-> None:
         """ Animates the given sprite and updates its location based on the provided movement """

@@ -19,7 +19,7 @@ def load_testsprite(hitboxes = None)-> sprite.MobileSprite:
         )
     directions["left"] = utils.mirror_sprite(directions['right'])
 
-    sp = twodimensional.Sprite2D(directionalsprites= directions, hitboxes = [])
+    sp = twodimensional.MobileSprite(animations= directions, hitboxes = [])
     ## NOTE: Test images were created when default currentdirection was "Y"/"Down", so sprite may need to be updated
     sp.animations.current_animation = "Y"
     if hitboxes:
